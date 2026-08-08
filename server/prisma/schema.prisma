@@ -1,0 +1,360 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Role {
+  CUSTOMER
+  STAFF
+  ADMIN
+  TECHNICIAN
+}
+
+// Granular admin RBAC role, only meaningful when Role = STAFF/ADMIN. Built now so
+// Pass 2's admin RBAC middleware has a column to read; UI/enforcement lands in Pass 2.
+enum StaffRole {
+  SUPER_ADMIN
+  OPERATIONS_MANAGER
+  SAFETY_QUALITY_OFFICER
+  SUPPORT_STAFF
+}
+
+enum MountType {
+  ROOFTOP
+  GROUND
+  AGRI_KUSUM
+}
+
+enum EmploymentType {
+  IN_HOUSE
+  VENDOR
+}
+
+enum LeadType {
+  GENERAL
+  SCHEME_ASSISTANCE
+  REPAIR_REQUEST
+  WARRANTY_WAITLIST
+  COMMERCIAL_QUOTE
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CONVERTED
+  LOST
+}
+
+enum ServiceCategory {
+  CLEANING
+  AMC
+  AUDIT
+  RESTORATION
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  TECHNICIAN_ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSED
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+}
+
+enum CleaningMethod {
+  DRY
+  WET
+  ROBOTIC
+}
+
+enum CityStatus {
+  LIVE
+  UPCOMING
+}
+
+enum DustZone {
+  HIGH
+  MODERATE
+  LOW
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+}
+
+// ---------- Models ----------
+
+model User {
+  id              String    @id @default(cuid())
+  role            Role      @default(CUSTOMER)
+  staffRole       StaffRole?
+  name            String
+  phone           String?   @unique
+  email           String?   @unique
+  passwordHash    String?
+  otpCodeHash     String?
+  otpExpiresAt    DateTime?
+  otpVerified     Boolean   @default(false)
+  referralCode    String    @unique @default(cuid())
+  referredById    String?
+  referredBy      User?     @relation("Referrals", fields: [referredById], references: [id])
+  referrals       User[]    @relation("Referrals")
+  internalNotes   String?   // admin/staff-only — never exposed via customer-facing endpoints
+  createdAt       DateTime  @default(now())
+
+  sites           Site[]
+  technician      Technician?
+  bookings        Booking[]
+  subscriptions   Subscription[]
+  reviews         Review[]
+  leadsAssigned   Lead[]    @relation("LeadAssignee")
+}
+
+model Site {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id])
+  label            String
+  addressJson      Json
+  plantCapacityKw  Float
+  mountType        MountType @default(ROOFTOP)
+  createdAt        DateTime  @default(now())
+
+  bookings         Booking[]
+  subscriptions    Subscription[]
+}
+
+model Technician {
+  id                 String         @id @default(cuid())
+  userId             String         @unique
+  user               User           @relation(fields: [userId], references: [id])
+  zoneCity           String
+  employmentType     EmploymentType @default(IN_HOUSE)
+  ppeStatusJson      Json?
+  verificationStatus String         @default("pending")
+  ratingAvg          Float          @default(0)
+  active             Boolean        @default(true)
+
+  bookings           Booking[]
+  inventoryItems     InventoryItem[]
+}
+
+model Lead {
+  id                String     @id @default(cuid())
+  name              String
+  phone             String
+  city              String?
+  plantCapacityKw   Float?
+  source            String     @default("website")
+  leadType          LeadType   @default(GENERAL)
+  status            LeadStatus @default(NEW)
+  assignedToId      String?
+  assignedTo        User?      @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  relatedBookingId  String?
+  relatedBooking    Booking?   @relation(fields: [relatedBookingId], references: [id])
+  message           String?
+  createdAt         DateTime   @default(now())
+}
+
+model Service {
+  id           String          @id @default(cuid())
+  name         String
+  description  String
+  basePrice    Float
+  pricePerKw   Float           @default(0)
+  category     ServiceCategory
+  featuresJson Json?           // admin-editable "what's included" bullet list
+  active       Boolean         @default(true)
+
+  bookings     Booking[]
+}
+
+model AMCPlan {
+  id                String   @id @default(cuid())
+  name              String   // Basic Clean / Standard AMC / Premium AMC
+  frequencyPerYear  Int
+  basePrice         Float
+  pricePerKw        Float    @default(0)
+  includesJson      Json
+  active            Boolean  @default(true)
+
+  subscriptions     Subscription[]
+  bookings          Booking[]
+}
+
+model Subscription {
+  id            String              @id @default(cuid())
+  userId        String
+  user          User                @relation(fields: [userId], references: [id])
+  siteId        String
+  site          Site                @relation(fields: [siteId], references: [id])
+  amcPlanId     String
+  amcPlan       AMCPlan             @relation(fields: [amcPlanId], references: [id])
+  startDate     DateTime            @default(now())
+  renewalDate   DateTime
+  status        SubscriptionStatus  @default(ACTIVE)
+
+  bookings      Booking[]
+}
+
+model Booking {
+  id               String        @id @default(cuid())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id])
+  siteId           String
+  site             Site          @relation(fields: [siteId], references: [id])
+  technicianId     String?
+  technician       Technician?   @relation(fields: [technicianId], references: [id])
+  serviceId        String?
+  service          Service?      @relation(fields: [serviceId], references: [id])
+  amcPlanId        String?
+  amcPlan          AMCPlan?      @relation(fields: [amcPlanId], references: [id])
+  subscriptionId   String?
+  subscription     Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  scheduledDate    DateTime
+  slotStart        String        // "06:00"
+  slotEnd          String        // "09:00"
+  status           BookingStatus @default(PENDING)
+  plantCapacityKw  Float
+  priceAmount      Float
+  paymentStatus    PaymentStatus @default(PENDING)
+  notes            String?
+  createdAt        DateTime      @default(now())
+
+  serviceReport    ServiceReport?
+  payments         Payment[]
+  review           Review?
+  leads            Lead[]
+}
+
+model ServiceReport {
+  id                       String    @id @default(cuid())
+  bookingId                String    @unique
+  booking                  Booking   @relation(fields: [bookingId], references: [id])
+
+  dcIsolationConfirmed     Boolean   @default(false)
+  cleaningMethod           CleaningMethod?
+  waterTds                 Float?
+  waterPh                  Float?
+  areaCleanedSqm           Float?
+  waterUsedL               Float?
+
+  prePrRatio               Float?
+  postPrRatio              Float?
+  improvementPct           Float?
+
+  beforePhotoUrl           String?
+  afterPhotoUrl            String?
+
+  defectsJson              Json?
+  electricalChecksJson     Json?
+  vegetationStructuralJson Json?
+
+  technicianSignoffAt      DateTime?
+  adminApprovedAt          DateTime?
+  featuredOnHomepage       Boolean   @default(false)
+}
+
+model City {
+  id        String     @id @default(cuid())
+  name      String
+  state     String
+  status    CityStatus @default(UPCOMING)
+  dustZone  DustZone   @default(MODERATE)
+  createdAt DateTime   @default(now())
+
+  @@unique([name, state])
+}
+
+// Singleton row (fixed id "singleton") — admin-editable contact/social info that
+// used to be hardcoded across the Footer/Contact/About pages and the WhatsApp button.
+model SiteSettings {
+  id              String  @id @default("singleton")
+  contactEmail    String
+  contactPhone    String
+  whatsappNumber  String
+  addressLine     String
+  socialLinksJson Json?
+}
+
+model InventoryItem {
+  id               String      @id @default(cuid())
+  name             String
+  unit             String
+  technicianId     String?
+  technician       Technician? @relation(fields: [technicianId], references: [id])
+  quantityOnHand   Float       @default(0)
+  reorderThreshold Float       @default(0)
+  updatedAt        DateTime    @updatedAt
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  bookingId    String
+  booking      Booking       @relation(fields: [bookingId], references: [id])
+  amount       Float
+  gatewayRef   String        @unique
+  status       PaymentStatus @default(PENDING)
+  method       String        @default("razorpay")
+  invoiceUrl   String?
+  createdAt    DateTime      @default(now())
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  bookingId  String   @unique
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+}
+
+model BlogPost {
+  id              String     @id @default(cuid())
+  title           String
+  slug            String     @unique
+  excerpt         String?
+  content         String     // markdown
+  featuredImageUrl String?
+  category        String?
+  metaTitle       String?
+  metaDescription String?
+  status          BlogStatus @default(DRAFT)
+  publishedAt     DateTime?
+  authorName      String     @default("EaseMyClean Team")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+// Generic per-page CMS row (id = page slug, e.g. "about" / "health-audit").
+// contentJson shape is page-specific — the admin editor and public page both
+// know the structure for their own slug.
+model PageContent {
+  id          String   @id
+  contentJson Json
+  updatedAt   DateTime @updatedAt
+}
