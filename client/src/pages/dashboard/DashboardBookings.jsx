@@ -50,7 +50,11 @@ function BookingGroup({ title, bookings }) {
             </div>
             <div className="text-right">
               <p className="font-bold text-ink">₹{b.priceAmount}</p>
-              <div className="mt-1"><StatusChip status={b.status} /></div>
+              <div className="mt-1 flex flex-wrap justify-end gap-1.5">
+                <StatusChip status={b.status} />
+                {b.serviceReport && <StatusChip status="REPORT_READY" />}
+                {b.reportPending && <StatusChip status="REPORT_PENDING" />}
+              </div>
             </div>
           </Link>
         ))}

@@ -25,6 +25,9 @@ const STYLES = {
   CONTACTED: "bg-gold/20 text-maroon",
   CONVERTED: "bg-forest/10 text-forest",
   LOST: "bg-gray-100 text-gray-600",
+  // Customer-facing service report availability
+  REPORT_READY: "bg-forest/10 text-forest",
+  REPORT_PENDING: "bg-gray-100 text-gray-600",
 };
 
 export function StatusChip({ status }) {

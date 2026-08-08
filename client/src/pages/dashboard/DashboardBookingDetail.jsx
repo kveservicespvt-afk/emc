@@ -99,10 +99,25 @@ function BookingDetailContent({ booking }) {
             <ReportStat label="Improvement" value={report.improvementPct ? `+${report.improvementPct}%` : "—"} highlight />
             <ReportStat label="Cleaning Method" value={report.cleaningMethod ?? "—"} />
             <ReportStat label="Water TDS" value={report.waterTds ? `${report.waterTds} ppm` : "—"} />
+            <ReportStat label="Water pH" value={report.waterPh ?? "—"} />
             <ReportStat label="Water Used" value={report.waterUsedL ? `${report.waterUsedL} L` : "—"} />
             <ReportStat label="Area Cleaned" value={report.areaCleanedSqm ? `${report.areaCleanedSqm} m²` : "—"} />
             <ReportStat label="DC Isolation" value={report.dcIsolationConfirmed ? "Confirmed" : "—"} />
           </dl>
+
+          {report.electricalChecksJson && Object.keys(report.electricalChecksJson).length > 0 && (
+            <div className="mt-6 border-t border-gray-100 pt-4">
+              <p className="text-xs font-semibold uppercase text-gray-400">Electrical Checks</p>
+              <dl className="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+                {Object.entries(report.electricalChecksJson).map(([check, result]) => (
+                  <div key={check} className="flex items-center gap-1.5">
+                    <dt className="capitalize text-gray-500">{check}:</dt>
+                    <dd className="font-medium text-ink">{result}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
         </div>
       )}
     </div>
