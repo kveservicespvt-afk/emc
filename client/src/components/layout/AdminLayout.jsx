@@ -11,6 +11,7 @@ const LINKS = [
   { to: "/admin/customers", label: "Customers" },
   { to: "/admin/general-queries", label: "General Queries", badgeKey: "newGeneralQueries" },
   { to: "/admin/commercial-queries", label: "Commercial Queries", badgeKey: "newCommercialQueries" },
+  { to: "/admin/payments", label: "Payments", badgeKey: "paymentIssues" },
   { to: "/admin/services", label: "Services" },
   { to: "/admin/amc-plans", label: "AMC Plans" },
   { to: "/admin/cities", label: "Cities" },

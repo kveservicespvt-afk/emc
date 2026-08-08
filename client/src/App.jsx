@@ -38,6 +38,7 @@ import { AdminBlogEditor } from "./pages/admin/AdminBlogEditor.jsx";
 import { AdminPageContent } from "./pages/admin/AdminPageContent.jsx";
 import { AdminGeneralQueries } from "./pages/admin/AdminGeneralQueries.jsx";
 import { AdminCommercialQueries } from "./pages/admin/AdminCommercialQueries.jsx";
+import { AdminPayments } from "./pages/admin/AdminPayments.jsx";
 
 export function App() {
   return (
@@ -78,6 +79,7 @@ export function App() {
         <Route path="customers/:id" element={<AdminCustomerDetail />} />
         <Route path="general-queries" element={<AdminGeneralQueries />} />
         <Route path="commercial-queries" element={<AdminCommercialQueries />} />
+        <Route path="payments" element={<AdminPayments />} />
         <Route path="blog" element={<AdminBlog />} />
         <Route path="blog/:id" element={<AdminBlogEditor />} />
         <Route path="page-content" element={<AdminPageContent />} />
