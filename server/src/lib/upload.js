@@ -48,3 +48,17 @@ export const blogImageUpload = multer({
   fileFilter: imageFileFilter,
   limits: { fileSize: 8 * 1024 * 1024 },
 });
+
+function csvFileFilter(_req, file, cb) {
+  const isCsv = file.mimetype === "text/csv" || file.mimetype === "application/vnd.ms-excel" || file.originalname.toLowerCase().endsWith(".csv");
+  if (!isCsv) return cb(new Error("Only .csv uploads are allowed"));
+  cb(null, true);
+}
+
+// In-memory only — parsed and discarded, never written to disk (unlike the
+// photo uploads above, which are permanent site assets).
+export const csvUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: csvFileFilter,
+  limits: { fileSize: 2 * 1024 * 1024 },
+});
