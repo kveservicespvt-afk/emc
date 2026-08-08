@@ -105,6 +105,7 @@ function OtpLogin({ onSuccess }) {
           <span className="font-bold uppercase tracking-wide">Dev Mode</span> — no SMS provider is
           connected yet, so this OTP is shown here for testing only. A real customer would never see this.
           <div className="mt-1 text-sm font-bold">OTP: {devOtp}</div>
+          <div className="mt-1 text-[11px] text-maroon/70">Tip: 123456 always works in dev mode.</div>
         </div>
       )}
       {isNewUser && (

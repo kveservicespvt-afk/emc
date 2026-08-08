@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { signToken } from "../lib/jwt.js";
-import { generateOtp, hashOtp, verifyOtp, otpExpiryDate, deliverOtp } from "../lib/otp.js";
+import { generateOtp, hashOtp, verifyOtp, otpExpiryDate, deliverOtp, isDevFallbackOtp } from "../lib/otp.js";
 import { badRequest, unauthorized, notFound } from "../lib/errors.js";
 
 const otpRequestSchema = z.object({
@@ -51,11 +51,17 @@ export async function verifyOtpCode(req, res, next) {
     const { phone, otp, name } = otpVerifySchema.parse(req.body);
     const user = await prisma.user.findUnique({ where: { phone } });
     if (!user) return next(notFound("No OTP request found for this number"));
-    if (!user.otpExpiresAt || user.otpExpiresAt < new Date()) {
-      return next(badRequest("OTP has expired — request a new one"));
+
+    // Dev-only shortcut (SHOW_DEV_OTP=true): "123456" always verifies, skipping
+    // the real hash/expiry check below entirely. Real OTP flow is untouched when
+    // this doesn't apply.
+    if (!isDevFallbackOtp(otp)) {
+      if (!user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+        return next(badRequest("OTP has expired — request a new one"));
+      }
+      const valid = await verifyOtp(otp, user.otpCodeHash);
+      if (!valid) return next(unauthorized("Incorrect OTP"));
     }
-    const valid = await verifyOtp(otp, user.otpCodeHash);
-    if (!valid) return next(unauthorized("Incorrect OTP"));
 
     const updated = await prisma.user.update({
       where: { id: user.id },

@@ -8,5 +8,6 @@ export default defineConfig({
     // so the default 5s timeout is too tight — round trips can take a few seconds.
     testTimeout: 30000,
     hookTimeout: 30000,
+    setupFiles: ["./src/tests/setup.js"],
   },
 });

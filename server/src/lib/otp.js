@@ -29,3 +29,13 @@ export function deliverOtp(phone, otp) {
   logger.info({ phone, otp }, "[MOCK OTP] would be sent via SMS/WhatsApp");
   return config.showDevOtp ? otp : undefined;
 }
+
+export const DEV_FALLBACK_OTP = "123456";
+
+// Manual-testing shortcut: accepts a fixed code for any phone number, bypassing
+// the real hash/expiry check entirely. Strictly gated on SHOW_DEV_OTP — checked
+// fresh on every call (not cached), so flipping the env var off immediately
+// disables it. Never a substitute for the real generated OTP, just faster to type.
+export function isDevFallbackOtp(otp) {
+  return config.showDevOtp && otp === DEV_FALLBACK_OTP;
+}
