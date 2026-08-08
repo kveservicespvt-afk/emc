@@ -6,7 +6,13 @@ import { StatusChip } from "../../components/ui/StatusChip.jsx";
 
 export function DashboardBookingDetail() {
   const { id } = useParams();
-  const query = useQuery({ queryKey: ["booking", id], queryFn: () => api.get(`/bookings/${id}`).then((r) => r.data.booking) });
+  // Polled so a reschedule made by an admin — including the "rescheduled" banner
+  // below — appears here without the customer needing to do anything.
+  const query = useQuery({
+    queryKey: ["booking", id],
+    queryFn: () => api.get(`/bookings/${id}`).then((r) => r.data.booking),
+    refetchInterval: 30_000,
+  });
 
   return (
     <div>
@@ -26,6 +32,16 @@ function BookingDetailContent({ booking }) {
 
   return (
     <div className="space-y-6">
+      {booking.rescheduledAt && !booking.rescheduleAcknowledgedAt && (
+        <div className="card border-l-4 border-gold bg-gold/10">
+          <p className="font-semibold text-maroon">Your visit was rescheduled</p>
+          <p className="mt-1 text-sm text-maroon/80">
+            This booking is now set for{" "}
+            {new Date(booking.scheduledDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} · {booking.slotStart}-{booking.slotEnd}.
+          </p>
+        </div>
+      )}
+
       <div className="card">
         <div className="flex items-start justify-between">
           <div>

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { badRequest, notFound } from "../../lib/errors.js";
+import { assertSlotAllowed } from "../../lib/slotValidator.js";
 
 export async function listBookingsAdmin(req, res, next) {
   try {
@@ -69,6 +70,44 @@ export async function getBookingAdmin(req, res, next) {
 
     res.json({ booking });
   } catch (err) {
+    next(err);
+  }
+}
+
+const rescheduleSchema = z.object({
+  scheduledDate: z.coerce.date(),
+  slotStart: z.string().regex(/^\d{2}:\d{2}$/),
+  slotEnd: z.string().regex(/^\d{2}:\d{2}$/),
+});
+
+export async function rescheduleBooking(req, res, next) {
+  try {
+    const data = rescheduleSchema.parse(req.body);
+    assertSlotAllowed(data.slotStart, data.slotEnd);
+
+    const existing = await prisma.booking.findUnique({ where: { id: req.params.id } });
+    if (!existing) return next(notFound("Booking not found"));
+
+    const oldDateLabel = existing.scheduledDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    const newDateLabel = data.scheduledDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    const message = `Rescheduled: ${oldDateLabel} ${existing.slotStart}-${existing.slotEnd} → ${newDateLabel} ${data.slotStart}-${data.slotEnd}`;
+
+    const booking = await prisma.booking.update({
+      where: { id: req.params.id },
+      data: {
+        scheduledDate: data.scheduledDate,
+        slotStart: data.slotStart,
+        slotEnd: data.slotEnd,
+        rescheduledAt: new Date(),
+        rescheduleAcknowledgedAt: null, // re-arm the customer-facing banner for the new date
+        activityLog: { create: { message, actorId: req.user.id } },
+      },
+      include: { activityLog: { orderBy: { createdAt: "desc" }, include: { actor: { select: { id: true, name: true } } } } },
+    });
+    res.json({ booking });
+  } catch (err) {
+    if (err instanceof z.ZodError) return next(badRequest("Invalid reschedule payload", err.issues));
+    if (err instanceof Error && err.message.includes("blocked")) return next(badRequest(err.message));
     next(err);
   }
 }

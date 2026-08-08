@@ -100,6 +100,15 @@ export async function getBooking(req, res, next) {
     if (booking.userId !== req.user.id && req.user.role === "CUSTOMER") {
       return next(forbidden());
     }
+
+    // This load is what shows the "rescheduled" banner — respond with the
+    // still-unacknowledged booking so the customer actually sees it, then mark
+    // it acknowledged in the background so it doesn't show again on the *next*
+    // load. Re-armed to null by rescheduleBooking on the next reschedule.
+    if (booking.rescheduledAt && !booking.rescheduleAcknowledgedAt) {
+      await prisma.booking.update({ where: { id: booking.id }, data: { rescheduleAcknowledgedAt: new Date() } });
+    }
+
     res.json({ booking: gateReport(booking) });
   } catch (err) {
     next(err);

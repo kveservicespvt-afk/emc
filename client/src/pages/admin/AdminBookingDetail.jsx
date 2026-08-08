@@ -9,6 +9,13 @@ import { NotesPanel } from "../../components/admin/NotesPanel.jsx";
 
 const STATUSES = ["PENDING", "CONFIRMED", "TECHNICIAN_ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
 
+// Mirrors client/src/components/booking/BookingWizard.jsx and server/src/config.js
+// booking.allowedSlots — the server re-validates against the same SOP window regardless.
+const ALLOWED_SLOTS = [
+  { label: "Morning (6 AM – 9 AM)", start: "06:00", end: "09:00" },
+  { label: "Evening (4 PM – 6:30 PM)", start: "16:00", end: "18:30" },
+];
+
 function includesToLines(json) {
   return Object.entries(json ?? {}).map(([k, v]) => `${k}: ${v}`).join("\n");
 }
@@ -54,11 +61,15 @@ export function AdminBookingDetail() {
   const [report, setReport] = useState(emptyReport);
   const [beforeFile, setBeforeFile] = useState(null);
   const [afterFile, setAfterFile] = useState(null);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleSlot, setRescheduleSlot] = useState(ALLOWED_SLOTS[0].start);
 
   useEffect(() => {
     if (!query.data) return;
     setStatus(query.data.status);
     setTechnicianId(query.data.technicianId ?? "");
+    setRescheduleDate(query.data.scheduledDate.slice(0, 10));
+    setRescheduleSlot(query.data.slotStart);
     if (query.data.serviceReport) {
       const r = query.data.serviceReport;
       setReport({
@@ -86,6 +97,18 @@ export function AdminBookingDetail() {
   const statusMutation = useMutation({
     mutationFn: () =>
       adminApi.patch(`/bookings/${id}/status`, { status, ...(technicianId ? { technicianId } : {}) }),
+    onSuccess: invalidate,
+  });
+
+  const rescheduleMutation = useMutation({
+    mutationFn: () => {
+      const slot = ALLOWED_SLOTS.find((s) => s.start === rescheduleSlot);
+      return adminApi.patch(`/admin/bookings/${id}/reschedule`, {
+        scheduledDate: rescheduleDate,
+        slotStart: slot.start,
+        slotEnd: slot.end,
+      });
+    },
     onSuccess: invalidate,
   });
 
@@ -168,6 +191,29 @@ export function AdminBookingDetail() {
                     </button>
                   </div>
                 </div>
+              </div>
+
+              <div className="card">
+                <h2 className="font-semibold text-ink">Reschedule</h2>
+                <p className="mt-1 text-sm text-gray-500">Pick a new date/slot — logged in the activity log below, and the customer sees it on their dashboard.</p>
+                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div>
+                    <label className="label">New Date</label>
+                    <input type="date" className="input" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="label">New Slot</label>
+                    <select className="input" value={rescheduleSlot} onChange={(e) => setRescheduleSlot(e.target.value)}>
+                      {ALLOWED_SLOTS.map((s) => <option key={s.start} value={s.start}>{s.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <button className="btn-secondary w-full" onClick={() => rescheduleMutation.mutate()} disabled={rescheduleMutation.isPending || !rescheduleDate}>
+                      {rescheduleMutation.isPending ? "Rescheduling…" : "Reschedule Booking"}
+                    </button>
+                  </div>
+                </div>
+                {rescheduleMutation.isError && <p className="mt-2 text-sm text-red-600">{apiErrorMessage(rescheduleMutation.error)}</p>}
               </div>
 
               <div className="card">

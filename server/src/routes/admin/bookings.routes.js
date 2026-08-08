@@ -8,5 +8,6 @@ router.use(requireAdmin);
 router.get("/", bookings.listBookingsAdmin);
 router.patch("/bulk-update", bookings.bulkUpdateBookings);
 router.get("/:id", bookings.getBookingAdmin);
+router.patch("/:id/reschedule", bookings.rescheduleBooking);
 
 export default router;

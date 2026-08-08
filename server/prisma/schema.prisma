@@ -247,6 +247,8 @@ model Booking {
   notes            String?
   createdAt        DateTime      @default(now())
   viewedByAdminAt  DateTime?     // set the first time an admin opens this booking's detail page — clears it from the sidebar badge count
+  rescheduledAt    DateTime?     // stamped on every reschedule
+  rescheduleAcknowledgedAt DateTime? // stamped when the customer opens this booking after a reschedule — drives the "Your visit was rescheduled" banner
 
   serviceReport    ServiceReport?
   payments         Payment[]
