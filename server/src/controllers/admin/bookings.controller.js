@@ -25,7 +25,7 @@ export async function listBookingsAdmin(req, res, next) {
         amcPlan: true,
         technician: { include: { user: true } },
       },
-      orderBy: { scheduledDate: "desc" },
+      orderBy: { scheduledDate: "asc" },
     });
     res.json({ bookings });
   } catch (err) {

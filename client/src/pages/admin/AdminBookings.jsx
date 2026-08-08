@@ -21,6 +21,7 @@ export function AdminBookings() {
   const [selected, setSelected] = useState([]);
   const [bulkStatus, setBulkStatus] = useState("");
   const [bulkTechnicianId, setBulkTechnicianId] = useState("");
+  const [needsActionOnly, setNeedsActionOnly] = useState(false);
 
   const query = useQuery({
     queryKey: ["admin-bookings", status, city, technicianId, paymentStatus, from, to],
@@ -74,8 +75,15 @@ export function AdminBookings() {
     },
   });
 
-  const allSelected = query.data?.length > 0 && selected.length === query.data.length;
-  const toggleAll = () => setSelected(allSelected ? [] : query.data.map((b) => b.id));
+  // Same definition as the "unassignedBookings" sidebar badge — surfaced here as
+  // a quick-filter chip so admins can spot what needs a technician at a glance,
+  // without having to build the same filter out of the status/technician dropdowns.
+  const isNeedsAction = (b) => !b.technicianId && ["PENDING", "CONFIRMED"].includes(b.status);
+  const needsActionCount = query.data?.filter(isNeedsAction).length ?? 0;
+  const visibleBookings = needsActionOnly ? query.data?.filter(isNeedsAction) : query.data;
+
+  const allSelected = visibleBookings?.length > 0 && selected.length === visibleBookings.length;
+  const toggleAll = () => setSelected(allSelected ? [] : visibleBookings.map((b) => b.id));
   const toggleOne = (id) => setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   return (
@@ -103,6 +111,18 @@ export function AdminBookings() {
           <label className="text-xs text-gray-500">To</label>
           <input type="date" className="input max-w-[10rem]" value={to} onChange={(e) => setTo(e.target.value)} />
         </div>
+      </div>
+
+      <div className="mt-4">
+        <button
+          className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+            needsActionOnly ? "border-gold bg-gold/20 text-maroon" : "border-gray-200 text-gray-500 hover:border-gold hover:text-maroon"
+          }`}
+          onClick={() => setNeedsActionOnly((prev) => !prev)}
+        >
+          ⚠ Needs Action
+          <span className="rounded-full bg-white/70 px-2 text-xs font-bold">{needsActionCount}</span>
+        </button>
       </div>
 
       {selected.length > 0 && (
@@ -134,8 +154,8 @@ export function AdminBookings() {
           isError={query.isError}
           error={query.error}
           onRetry={query.refetch}
-          isEmpty={query.data?.length === 0}
-          emptyMessage="No bookings match these filters."
+          isEmpty={visibleBookings?.length === 0}
+          emptyMessage={needsActionOnly ? "Nothing needs action right now." : "No bookings match these filters."}
         >
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -154,7 +174,7 @@ export function AdminBookings() {
                 </tr>
               </thead>
               <tbody>
-                {query.data?.map((b) => (
+                {visibleBookings?.map((b) => (
                   <tr key={b.id} className="border-b border-gray-50">
                     <td className="py-3">
                       <input type="checkbox" checked={selected.includes(b.id)} onChange={() => toggleOne(b.id)} />

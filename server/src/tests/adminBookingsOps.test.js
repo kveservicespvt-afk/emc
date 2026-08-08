@@ -100,6 +100,18 @@ describe("admin bookings filters", () => {
     expect(res.status).toBe(200);
     expect(res.body.bookings.some((b) => b.id === bookingAId)).toBe(true);
   });
+
+  it("defaults to scheduledDate ascending (soonest first)", async () => {
+    const res = await request(app)
+      .get("/api/admin/bookings")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    const indexA = res.body.bookings.findIndex((b) => b.id === bookingAId); // 2027-03-01
+    const indexB = res.body.bookings.findIndex((b) => b.id === bookingBId); // 2027-03-02
+    expect(indexA).toBeGreaterThanOrEqual(0);
+    expect(indexB).toBeGreaterThanOrEqual(0);
+    expect(indexA).toBeLessThan(indexB);
+  });
 });
 
 describe("booking activity log", () => {
