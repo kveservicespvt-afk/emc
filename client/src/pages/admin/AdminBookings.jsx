@@ -5,6 +5,7 @@ import { adminApi } from "../../api/adminClient.js";
 import { apiErrorMessage } from "../../api/client.js";
 import { AsyncState } from "../../components/ui/AsyncState.jsx";
 import { StatusChip } from "../../components/ui/StatusChip.jsx";
+import { StatusPopover } from "../../components/admin/StatusPopover.jsx";
 
 const STATUSES = ["PENDING", "CONFIRMED", "TECHNICIAN_ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
 const PAYMENT_STATUSES = ["PENDING", "PROCESSED", "SUCCESSFUL", "FAILED", "REFUNDED"];
@@ -47,6 +48,16 @@ export function AdminBookings() {
     queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
     queryClient.invalidateQueries({ queryKey: ["admin-badge-counts"] });
   };
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status: newStatus }) => adminApi.patch(`/bookings/${id}/status`, { status: newStatus }),
+    onSuccess: invalidate,
+  });
+
+  const markPaidMutation = useMutation({
+    mutationFn: (bookingId) => adminApi.post(`/admin/payments/${bookingId}/mark-paid`, {}),
+    onSuccess: invalidate,
+  });
 
   const bulkMutation = useMutation({
     mutationFn: () =>
@@ -159,8 +170,27 @@ export function AdminBookings() {
                       {new Date(b.scheduledDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     </td>
                     <td className="py-3 text-gray-500">{b.technician?.user?.name ?? "Unassigned"}</td>
-                    <td className="py-3"><StatusChip status={b.status} /></td>
-                    <td className="py-3"><StatusChip status={b.paymentStatus} /></td>
+                    <td className="py-3">
+                      <StatusPopover
+                        status={b.status}
+                        options={STATUSES}
+                        disabled={statusMutation.isPending}
+                        onSelect={(newStatus) => statusMutation.mutate({ id: b.id, status: newStatus })}
+                      />
+                    </td>
+                    <td className="py-3">
+                      {b.paymentStatus === "SUCCESSFUL" ? (
+                        <StatusChip status={b.paymentStatus} />
+                      ) : (
+                        <button
+                          className="rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-500 hover:border-forest hover:text-forest disabled:opacity-50"
+                          disabled={markPaidMutation.isPending}
+                          onClick={() => markPaidMutation.mutate(b.id)}
+                        >
+                          {markPaidMutation.isPending && markPaidMutation.variables === b.id ? "Marking…" : "Mark as Paid"}
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
