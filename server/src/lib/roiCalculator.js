@@ -2,14 +2,16 @@
 // model — it's a lead-gen tool, so the formula favors being simple and explainable
 // over rigorous. ASSUMPTION (flagged for the client to confirm/refine): recoverable
 // soiling loss by dust zone is estimated from typical Indian rooftop soiling studies.
-const RECOVERABLE_LOSS_PCT = {
+// The loss-pct-by-zone map is admin-editable (SiteSettings.roi*ZoneLossPct) — this
+// constant is only the defensive fallback if that lookup is ever missing.
+const DEFAULT_RECOVERABLE_LOSS_PCT = {
   HIGH: 0.2,
   MODERATE: 0.12,
   LOW: 0.06,
 };
 
-export function estimateSavings({ plantCapacityKw, avgMonthlyBill, dustZone }) {
-  const pct = RECOVERABLE_LOSS_PCT[dustZone];
+export function estimateSavings({ plantCapacityKw, avgMonthlyBill, dustZone }, lossPctByZone = DEFAULT_RECOVERABLE_LOSS_PCT) {
+  const pct = lossPctByZone[dustZone];
   if (pct === undefined) {
     throw new Error("dustZone must be one of HIGH, MODERATE, LOW");
   }

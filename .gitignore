@@ -9,3 +9,4 @@ uploads/
 client/dist/
 server/dist/
 coverage/
+.claude/

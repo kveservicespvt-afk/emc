@@ -8,6 +8,9 @@ const settingsSchema = z.object({
   whatsappNumber: z.string().min(6).optional(),
   addressLine: z.string().min(4).optional(),
   socialLinksJson: z.record(z.string(), z.string()).optional(),
+  roiHighZoneLossPct: z.coerce.number().min(0).max(1).optional(),
+  roiModerateZoneLossPct: z.coerce.number().min(0).max(1).optional(),
+  roiLowZoneLossPct: z.coerce.number().min(0).max(1).optional(),
 });
 
 export async function updateSettings(req, res, next) {

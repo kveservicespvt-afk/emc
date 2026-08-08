@@ -301,6 +301,13 @@ model SiteSettings {
   whatsappNumber  String
   addressLine     String
   socialLinksJson Json?
+
+  // ROI calculator formula, admin-editable — recoverable soiling loss % by dust
+  // zone, applied to a customer's avg monthly bill. Defaults match the values
+  // that used to be hardcoded in lib/roiCalculator.js.
+  roiHighZoneLossPct     Float @default(0.2)
+  roiModerateZoneLossPct Float @default(0.12)
+  roiLowZoneLossPct      Float @default(0.06)
 }
 
 model InventoryItem {
