@@ -36,7 +36,8 @@ import { AdminCustomerDetail } from "./pages/admin/AdminCustomerDetail.jsx";
 import { AdminBlog } from "./pages/admin/AdminBlog.jsx";
 import { AdminBlogEditor } from "./pages/admin/AdminBlogEditor.jsx";
 import { AdminPageContent } from "./pages/admin/AdminPageContent.jsx";
-import { AdminLeads } from "./pages/admin/AdminLeads.jsx";
+import { AdminGeneralQueries } from "./pages/admin/AdminGeneralQueries.jsx";
+import { AdminCommercialQueries } from "./pages/admin/AdminCommercialQueries.jsx";
 
 export function App() {
   return (
@@ -75,7 +76,8 @@ export function App() {
         <Route path="cities" element={<AdminCities />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="customers/:id" element={<AdminCustomerDetail />} />
-        <Route path="leads" element={<AdminLeads />} />
+        <Route path="general-queries" element={<AdminGeneralQueries />} />
+        <Route path="commercial-queries" element={<AdminCommercialQueries />} />
         <Route path="blog" element={<AdminBlog />} />
         <Route path="blog/:id" element={<AdminBlogEditor />} />
         <Route path="page-content" element={<AdminPageContent />} />

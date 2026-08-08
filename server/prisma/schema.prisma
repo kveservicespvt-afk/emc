@@ -129,6 +129,8 @@ model User {
   subscriptions   Subscription[]
   reviews         Review[]
   leadsAssigned   Lead[]    @relation("LeadAssignee")
+  adminNotes      AdminNote[]
+  bookingActivity BookingActivityLog[]
 }
 
 model Site {
@@ -175,6 +177,7 @@ model Lead {
   relatedBooking    Booking?   @relation(fields: [relatedBookingId], references: [id])
   message           String?
   createdAt         DateTime   @default(now())
+  contactedAt       DateTime?  // set the moment status first transitions to CONTACTED — feeds the Lead Conversion Report's time-to-contact metric
 }
 
 model Service {
@@ -247,6 +250,7 @@ model Booking {
   payments         Payment[]
   review           Review?
   leads            Lead[]
+  activityLog      BookingActivityLog[]
 }
 
 model ServiceReport {
@@ -357,4 +361,36 @@ model PageContent {
   id          String   @id
   contentJson Json
   updatedAt   DateTime @updatedAt
+}
+
+enum NoteEntityType {
+  BOOKING
+  LEAD
+}
+
+// Generic timestamped admin note, reused for both Bookings and Leads instead of
+// two near-identical models — no FK constraint on entityId (loose lookup by
+// entityType+entityId) since entityId can point at either table.
+model AdminNote {
+  id         String         @id @default(cuid())
+  entityType NoteEntityType
+  entityId   String
+  authorId   String
+  author     User           @relation(fields: [authorId], references: [id])
+  body       String
+  createdAt  DateTime       @default(now())
+
+  @@index([entityType, entityId])
+}
+
+// Simple per-booking audit trail — one row per status change or technician
+// (re)assignment, written by the same handler that performs the update.
+model BookingActivityLog {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  actorId   String
+  actor     User     @relation(fields: [actorId], references: [id])
+  message   String
+  createdAt DateTime @default(now())
 }

@@ -34,6 +34,8 @@ import adminCustomersRoutes from "./routes/admin/customers.routes.js";
 import adminBlogRoutes from "./routes/admin/blog.routes.js";
 import adminPageContentRoutes from "./routes/admin/pageContent.routes.js";
 import adminLeadsRoutes from "./routes/admin/leads.routes.js";
+import adminNotesRoutes from "./routes/admin/notes.routes.js";
+import adminBadgeCountsRoutes from "./routes/admin/badgeCounts.routes.js";
 
 // Exported as a factory (not auto-started) so integration tests can import the app
 // without binding a port.
@@ -73,6 +75,8 @@ export function createApp() {
   app.use("/api/admin/blog", adminBlogRoutes);
   app.use("/api/admin/page-content", adminPageContentRoutes);
   app.use("/api/admin/leads", adminLeadsRoutes);
+  app.use("/api/admin/notes", adminNotesRoutes);
+  app.use("/api/admin/badge-counts", adminBadgeCountsRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
