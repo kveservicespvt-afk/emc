@@ -5,6 +5,7 @@ import { adminApi } from "../../api/adminClient.js";
 import { apiErrorMessage, resolveMediaUrl } from "../../api/client.js";
 import { AsyncState } from "../../components/ui/AsyncState.jsx";
 import { StatusChip } from "../../components/ui/StatusChip.jsx";
+import { NotesPanel } from "../../components/admin/NotesPanel.jsx";
 
 const STATUSES = ["PENDING", "CONFIRMED", "TECHNICIAN_ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
 
@@ -79,6 +80,7 @@ export function AdminBookingDetail() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["admin-booking", id] });
     queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-badge-counts"] });
   };
 
   const statusMutation = useMutation({
@@ -166,6 +168,28 @@ export function AdminBookingDetail() {
                     </button>
                   </div>
                 </div>
+              </div>
+
+              <div className="card">
+                <h2 className="font-semibold text-ink">Activity Log</h2>
+                {query.data.activityLog?.length ? (
+                  <ul className="mt-3 space-y-2 text-sm">
+                    {query.data.activityLog.map((entry) => (
+                      <li key={entry.id} className="flex items-start justify-between gap-3 border-b border-gray-50 pb-2">
+                        <span className="text-ink">{entry.message}</span>
+                        <span className="shrink-0 text-xs text-gray-400">
+                          {entry.actor?.name ?? "—"} · {new Date(entry.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm text-gray-400">No status or technician changes logged yet.</p>
+                )}
+              </div>
+
+              <div className="card">
+                <NotesPanel entityType="BOOKING" entityId={id} />
               </div>
 
               <div className="card">

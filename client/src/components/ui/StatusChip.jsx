@@ -1,8 +1,8 @@
 const STYLES = {
-  PENDING: "bg-gray-100 text-gray-600",
+  PENDING: "bg-yellow-100 text-yellow-800",
   CONFIRMED: "bg-blue-100 text-blue-700",
   TECHNICIAN_ASSIGNED: "bg-indigo-100 text-indigo-700",
-  IN_PROGRESS: "bg-gold/20 text-maroon",
+  IN_PROGRESS: "bg-blue-100 text-blue-700",
   COMPLETED: "bg-forest/10 text-forest",
   CANCELLED: "bg-red-100 text-red-700",
   SUCCESSFUL: "bg-forest/10 text-forest",

@@ -6,6 +6,7 @@ const router = Router();
 router.use(requireAdmin);
 
 router.get("/", bookings.listBookingsAdmin);
+router.patch("/bulk-update", bookings.bulkUpdateBookings);
 router.get("/:id", bookings.getBookingAdmin);
 
 export default router;

@@ -121,9 +121,31 @@ const statusSchema = z.object({
 export async function updateBookingStatus(req, res, next) {
   try {
     const data = statusSchema.parse(req.body);
+    const existing = await prisma.booking.findUnique({
+      where: { id: req.params.id },
+      include: { technician: { include: { user: true } } },
+    });
+    if (!existing) return next(notFound("Booking not found"));
+
+    const messages = [];
+    if (data.status !== existing.status) {
+      messages.push(`Status changed ${existing.status} → ${data.status}`);
+    }
+    if (data.technicianId && data.technicianId !== existing.technicianId) {
+      const technician = await prisma.technician.findUnique({ where: { id: data.technicianId }, include: { user: true } });
+      messages.push(`Assigned to ${technician?.user?.name ?? "technician"}`);
+    }
+
     const booking = await prisma.booking.update({
       where: { id: req.params.id },
-      data: { status: data.status, ...(data.technicianId ? { technicianId: data.technicianId } : {}) },
+      data: {
+        status: data.status,
+        ...(data.technicianId ? { technicianId: data.technicianId } : {}),
+        ...(messages.length
+          ? { activityLog: { create: messages.map((message) => ({ message, actorId: req.user.id })) } }
+          : {}),
+      },
+      include: { technician: { include: { user: true } }, activityLog: { orderBy: { createdAt: "desc" } } },
     });
     res.json({ booking });
   } catch (err) {
