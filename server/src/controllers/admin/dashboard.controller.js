@@ -23,19 +23,56 @@ export async function getDashboardStats(_req, res, next) {
   }
 }
 
+// A payment stuck PENDING for >24h needs a human look (Payment rows only exist
+// for attempted transactions, so PENDING/FAILED payment rows are true problems,
+// not just "not paid yet").
+function stalePendingPaymentWhere() {
+  const stallThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  return { OR: [{ status: "FAILED" }, { status: "PENDING", createdAt: { lt: stallThreshold } }] };
+}
+
 // Powers the sidebar nav badges. Every count here is a live computed query, not
 // a stored "unseen" flag — it naturally clears the moment an admin takes the
-// corresponding action (assigns a technician, updates a lead's status, etc.),
-// so there's nothing to keep in sync. Extended in a later pass with payment
-// counts once the Payments screen exists.
+// corresponding action (assigns a technician, updates a lead's status, marks a
+// payment), so there's nothing to keep in sync.
 export async function getBadgeCounts(_req, res, next) {
   try {
-    const [unassignedBookings, newGeneralQueries, newCommercialQueries] = await Promise.all([
+    const [unassignedBookings, newGeneralQueries, newCommercialQueries, paymentIssues] = await Promise.all([
       prisma.booking.count({ where: { technicianId: null, status: { in: ["PENDING", "CONFIRMED"] } } }),
       prisma.lead.count({ where: { leadType: "GENERAL", status: "NEW" } }),
       prisma.lead.count({ where: { leadType: "COMMERCIAL_QUOTE", status: "NEW" } }),
+      prisma.payment.count({ where: stalePendingPaymentWhere() }),
     ]);
-    res.json({ unassignedBookings, newGeneralQueries, newCommercialQueries });
+    res.json({ unassignedBookings, newGeneralQueries, newCommercialQueries, paymentIssues });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Same conditions as the badges, but returns the actual rows (capped) so the
+// Dashboard "Needs Attention" panel can link straight into each record.
+export async function getNeedsAttention(_req, res, next) {
+  try {
+    const [unassignedBookings, newLeads, paymentIssues] = await Promise.all([
+      prisma.booking.findMany({
+        where: { technicianId: null, status: { in: ["PENDING", "CONFIRMED"] } },
+        include: { user: true, service: true, amcPlan: true },
+        orderBy: { scheduledDate: "asc" },
+        take: 10,
+      }),
+      prisma.lead.findMany({
+        where: { status: "NEW" },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+      prisma.payment.findMany({
+        where: stalePendingPaymentWhere(),
+        include: { booking: { include: { user: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+    ]);
+    res.json({ unassignedBookings, newLeads, paymentIssues });
   } catch (err) {
     next(err);
   }
