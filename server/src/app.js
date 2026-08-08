@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
@@ -5,6 +7,12 @@ import { config } from "./config.js";
 import { logger } from "./lib/logger.js";
 import { UPLOADS_ROOT } from "./lib/upload.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Git-tracked demo imagery (prisma/seed-assets) served directly from its
+// permanent location — unlike /uploads (ephemeral on Render's disk, wiped on
+// every deploy), these files are part of the deployed codebase and always present.
+const SEED_ASSETS_ROOT = path.join(__dirname, "..", "prisma", "seed-assets");
 
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -48,6 +56,7 @@ export function createApp() {
   app.use(express.json());
   app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === "/api/health" } }));
   app.use("/uploads", express.static(UPLOADS_ROOT));
+  app.use("/seed-assets", express.static(SEED_ASSETS_ROOT));
 
   app.use("/api/health", healthRoutes);
   app.use("/api/auth", authRoutes);

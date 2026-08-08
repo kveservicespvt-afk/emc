@@ -1,33 +1,18 @@
 import "dotenv/config";
-import path from "node:path";
-import fs from "node:fs";
-import { fileURLToPath } from "node:url";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { UPLOADS_ROOT } from "../src/lib/upload.js";
 
 const prisma = new PrismaClient();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Purpose-generated solar-panel imagery (dusty vs. clean) — NOT a third-party
 // stock-photo placeholder. Source PNGs are git-tracked under prisma/seed-assets/
-// (see gen-seed-images.js) and get copied into /uploads (served statically) here
-// so the demo data never shows an unrelated stock photo again.
-const PLACEHOLDER_BEFORE = "/uploads/seed/solar-before.png";
-const PLACEHOLDER_AFTER = "/uploads/seed/solar-after.png";
-
-function copySeedImages() {
-  const destDir = path.join(UPLOADS_ROOT, "seed");
-  fs.mkdirSync(destDir, { recursive: true });
-  for (const name of ["solar-before.png", "solar-after.png"]) {
-    fs.copyFileSync(path.join(__dirname, "seed-assets", name), path.join(destDir, name));
-  }
-}
+// (see gen-seed-images.js) and served directly from there via a permanent static
+// route in app.js — NOT copied into /uploads, which is ephemeral on Render's
+// disk and gets wiped on every deploy (that's what broke these images live).
+const PLACEHOLDER_BEFORE = "/seed-assets/solar-before.png";
+const PLACEHOLDER_AFTER = "/seed-assets/solar-after.png";
 
 async function main() {
-  console.log("Copying seed images into /uploads/seed...");
-  copySeedImages();
-
   console.log("Wiping existing data...");
   // Reverse FK-dependency order.
   await prisma.review.deleteMany();

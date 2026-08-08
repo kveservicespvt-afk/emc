@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, resolveMediaUrl } from "../../api/client.js";
 
-// Generated solar-panel imagery (not a stock-photo fallback) — see
-// server/prisma/seed-assets/README and seed.js. Used only if no admin has
-// marked a real Service Report photo pair as "feature on homepage" yet.
-const PLACEHOLDER_BEFORE = "/uploads/seed/solar-before.png";
-const PLACEHOLDER_AFTER = "/uploads/seed/solar-after.png";
+// Generated solar-panel imagery (not a stock-photo fallback) — served from a
+// permanent static route (server/prisma/seed-assets, not the ephemeral
+// /uploads mount — see app.js) so it survives a Render redeploy. Used only if
+// no admin has marked a real Service Report photo pair as "feature on homepage" yet.
+const PLACEHOLDER_BEFORE = "/seed-assets/solar-before.png";
+const PLACEHOLDER_AFTER = "/seed-assets/solar-after.png";
 
 export function BeforeAfterSlider() {
   const [pos, setPos] = useState(50);
