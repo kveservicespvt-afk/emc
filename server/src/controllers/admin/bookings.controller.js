@@ -35,7 +35,7 @@ export async function listBookingsAdmin(req, res, next) {
 
 export async function getBookingAdmin(req, res, next) {
   try {
-    const booking = await prisma.booking.findUnique({
+    let booking = await prisma.booking.findUnique({
       where: { id: req.params.id },
       include: {
         user: true,
@@ -49,6 +49,24 @@ export async function getBookingAdmin(req, res, next) {
       },
     });
     if (!booking) return next(notFound("Booking not found"));
+
+    if (!booking.viewedByAdminAt) {
+      booking = await prisma.booking.update({
+        where: { id: booking.id },
+        data: { viewedByAdminAt: new Date() },
+        include: {
+          user: true,
+          site: true,
+          service: true,
+          amcPlan: true,
+          technician: { include: { user: true } },
+          payments: true,
+          serviceReport: true,
+          activityLog: { orderBy: { createdAt: "desc" }, include: { actor: { select: { id: true, name: true } } } },
+        },
+      });
+    }
+
     res.json({ booking });
   } catch (err) {
     next(err);

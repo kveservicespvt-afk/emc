@@ -6,6 +6,7 @@ const router = Router();
 router.use(requireAdmin);
 
 router.get("/", leads.listLeads);
+router.post("/:id/view", leads.markLeadViewed);
 router.patch("/:id", leads.updateLead);
 
 export default router;

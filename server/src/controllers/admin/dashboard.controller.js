@@ -31,16 +31,18 @@ function stalePendingPaymentWhere() {
   return { OR: [{ status: "FAILED" }, { status: "PENDING", createdAt: { lt: stallThreshold } }] };
 }
 
-// Powers the sidebar nav badges. Every count here is a live computed query, not
-// a stored "unseen" flag — it naturally clears the moment an admin takes the
-// corresponding action (assigns a technician, updates a lead's status, marks a
-// payment), so there's nothing to keep in sync.
+// Powers the sidebar nav badges. Bookings/General/Commercial Queries additionally
+// require viewedByAdminAt: null — once an admin actually opens a record it drops
+// off the badge even if still unactioned (per explicit ask), which is a stricter
+// condition than "Needs Attention" below, so the two panels can disagree on
+// purpose: the badge is about unread notifications, the dashboard panel is about
+// outstanding work. Payments badge is untouched — no viewed-tracking requested for it.
 export async function getBadgeCounts(_req, res, next) {
   try {
     const [unassignedBookings, newGeneralQueries, newCommercialQueries, paymentIssues] = await Promise.all([
-      prisma.booking.count({ where: { technicianId: null, status: { in: ["PENDING", "CONFIRMED"] } } }),
-      prisma.lead.count({ where: { leadType: "GENERAL", status: "NEW" } }),
-      prisma.lead.count({ where: { leadType: "COMMERCIAL_QUOTE", status: "NEW" } }),
+      prisma.booking.count({ where: { technicianId: null, status: { in: ["PENDING", "CONFIRMED"] }, viewedByAdminAt: null } }),
+      prisma.lead.count({ where: { leadType: "GENERAL", status: "NEW", viewedByAdminAt: null } }),
+      prisma.lead.count({ where: { leadType: "COMMERCIAL_QUOTE", status: "NEW", viewedByAdminAt: null } }),
       prisma.payment.count({ where: stalePendingPaymentWhere() }),
     ]);
     res.json({ unassignedBookings, newGeneralQueries, newCommercialQueries, paymentIssues });

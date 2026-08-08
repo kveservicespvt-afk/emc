@@ -178,6 +178,7 @@ model Lead {
   message           String?
   createdAt         DateTime   @default(now())
   contactedAt       DateTime?  // set the moment status first transitions to CONTACTED — feeds the Lead Conversion Report's time-to-contact metric
+  viewedByAdminAt   DateTime?  // set the first time an admin opens this lead's row — clears it from the sidebar badge count
 }
 
 model Service {
@@ -245,6 +246,7 @@ model Booking {
   paymentStatus    PaymentStatus @default(PENDING)
   notes            String?
   createdAt        DateTime      @default(now())
+  viewedByAdminAt  DateTime?     // set the first time an admin opens this booking's detail page — clears it from the sidebar badge count
 
   serviceReport    ServiceReport?
   payments         Payment[]

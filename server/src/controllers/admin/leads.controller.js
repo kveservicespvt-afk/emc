@@ -37,6 +37,26 @@ const updateSchema = z.object({
   assignedToId: z.string().nullable().optional(),
 });
 
+// Leads have no dedicated detail-fetch route (the list view expands a row
+// client-side with no API round-trip), so viewing is an explicit action the
+// frontend calls when a row is expanded — mirrors getBookingAdmin's
+// auto-stamp-on-fetch, just triggered differently since there's no fetch to hook.
+export async function markLeadViewed(req, res, next) {
+  try {
+    const existing = await prisma.lead.findUnique({ where: { id: req.params.id } });
+    if (!existing) return next(notFound("Lead not found"));
+    if (existing.viewedByAdminAt) return res.json({ lead: existing });
+
+    const lead = await prisma.lead.update({
+      where: { id: req.params.id },
+      data: { viewedByAdminAt: new Date() },
+    });
+    res.json({ lead });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function updateLead(req, res, next) {
   try {
     const data = updateSchema.parse(req.body);

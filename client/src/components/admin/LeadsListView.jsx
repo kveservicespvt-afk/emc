@@ -44,6 +44,19 @@ export function LeadsListView({ leadType, showPlantCapacity }) {
     },
   });
 
+  // Leads have no detail page — expanding a row here IS "opening" it, so that's
+  // the moment to stamp viewedByAdminAt and clear it from the sidebar badge.
+  const viewMutation = useMutation({
+    mutationFn: (id) => adminApi.post(`/admin/leads/${id}/view`, {}),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-badge-counts"] }),
+  });
+
+  function toggleExpanded(lead) {
+    const next = expandedId === lead.id ? null : lead.id;
+    setExpandedId(next);
+    if (next && !lead.viewedByAdminAt) viewMutation.mutate(lead.id);
+  }
+
   return (
     <div>
       <div className="card flex flex-wrap gap-3">
@@ -75,7 +88,7 @@ export function LeadsListView({ leadType, showPlantCapacity }) {
               <div key={lead.id} className="py-3">
                 <button
                   className="flex w-full flex-wrap items-center justify-between gap-2 text-left"
-                  onClick={() => setExpandedId(expandedId === lead.id ? null : lead.id)}
+                  onClick={() => toggleExpanded(lead)}
                 >
                   <div className="flex items-center gap-3">
                     <span className="font-medium text-ink">{lead.name}</span>
