@@ -101,9 +101,11 @@ function OtpLogin({ onSuccess }) {
       className="space-y-4"
     >
       {devOtp && (
-        <p className="rounded-lg bg-gold/10 px-3 py-2 text-xs text-maroon">
-          Dev mode — no SMS provider connected yet. Your OTP is <strong>{devOtp}</strong>.
-        </p>
+        <div className="rounded-lg border border-gold bg-gold/10 px-3 py-2 text-xs text-maroon">
+          <span className="font-bold uppercase tracking-wide">Dev Mode</span> — no SMS provider is
+          connected yet, so this OTP is shown here for testing only. A real customer would never see this.
+          <div className="mt-1 text-sm font-bold">OTP: {devOtp}</div>
+        </div>
       )}
       {isNewUser && (
         <div>

@@ -21,10 +21,11 @@ export function otpExpiryDate() {
   return new Date(Date.now() + OTP_TTL_MS);
 }
 
-// In Pass 1 there is no real SMS/WhatsApp provider wired up (per spec Section 3,
-// deferred until a paid API is added). We log the OTP server-side and — outside of
-// production — hand it back in the API response so the flow is testable end-to-end.
+// No real SMS/WhatsApp provider is wired up yet (per spec Section 3, deferred
+// until a paid API is added). We always log the OTP server-side, and — only when
+// SHOW_DEV_OTP=true — also hand it back in the API response so the login flow is
+// usable for testing/demo (including on a live deploy) before real delivery exists.
 export function deliverOtp(phone, otp) {
   logger.info({ phone, otp }, "[MOCK OTP] would be sent via SMS/WhatsApp");
-  return config.otpMockMode && config.nodeEnv !== "production" ? otp : undefined;
+  return config.showDevOtp ? otp : undefined;
 }

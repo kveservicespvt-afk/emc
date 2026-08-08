@@ -11,7 +11,12 @@ export const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
 
   razorpayMockMode: process.env.RAZORPAY_MOCK_MODE !== "false",
-  otpMockMode: process.env.OTP_MOCK_MODE !== "false",
+  // Surfaces the generated OTP in the /api/auth/otp/request response (and the
+  // login screen) so the flow is usable before a real SMS provider is wired up —
+  // deliberately independent of NODE_ENV so it can be turned on for a live demo
+  // deploy. Defaults OFF; must be explicitly set to "true". Turn off before
+  // real customer launch.
+  showDevOtp: process.env.SHOW_DEV_OTP === "true",
 
   // SOP business rules (Section 8)
   booking: {
