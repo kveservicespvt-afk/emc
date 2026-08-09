@@ -2,8 +2,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { badRequest, notFound } from "../lib/errors.js";
 import { assertSlotAllowed } from "../lib/slotValidator.js";
-import { calculatePrice } from "../lib/pricing.js";
-import { generateFutureVisitDates } from "../lib/scheduling.js";
+import { createSubscriptionWithSchedule } from "../lib/subscriptionCreator.js";
 
 const createSubscriptionSchema = z.object({
   siteId: z.string().min(1),
@@ -25,73 +24,20 @@ export async function createSubscription(req, res, next) {
     const site = await prisma.site.findUnique({ where: { id: data.siteId } });
     if (!site || site.userId !== req.user.id) return next(notFound("Site not found"));
 
-    const amcPlan = await prisma.aMCPlan.findUnique({ where: { id: data.amcPlanId } });
-    if (!amcPlan || !amcPlan.active) return next(notFound("AMC plan not found"));
-
-    const priceAmount = calculatePrice({
-      basePrice: amcPlan.basePrice,
-      pricePerKw: amcPlan.pricePerKw,
-      plantCapacityKw: site.plantCapacityKw,
-    });
-
-    const renewalDate = new Date(data.firstVisitDate);
-    renewalDate.setFullYear(renewalDate.getFullYear() + 1);
-
-    const result = await prisma.$transaction(async (tx) => {
-      const subscription = await tx.subscription.create({
-        data: {
-          userId: req.user.id,
-          siteId: site.id,
-          amcPlanId: amcPlan.id,
-          startDate: data.firstVisitDate,
-          renewalDate,
-        },
-      });
-
-      const firstBooking = await tx.booking.create({
-        data: {
-          userId: req.user.id,
-          siteId: site.id,
-          amcPlanId: amcPlan.id,
-          subscriptionId: subscription.id,
-          scheduledDate: data.firstVisitDate,
-          slotStart: data.slotStart,
-          slotEnd: data.slotEnd,
-          plantCapacityKw: site.plantCapacityKw,
-          priceAmount,
-        },
-      });
-
-      const futureVisits = generateFutureVisitDates(
-        data.firstVisitDate,
-        amcPlan.frequencyPerYear,
-        data.slotStart,
-        data.slotEnd
-      );
-
-      if (futureVisits.length > 0) {
-        await tx.booking.createMany({
-          data: futureVisits.map((visit) => ({
-            userId: req.user.id,
-            siteId: site.id,
-            amcPlanId: amcPlan.id,
-            subscriptionId: subscription.id,
-            scheduledDate: visit.scheduledDate,
-            slotStart: visit.slotStart,
-            slotEnd: visit.slotEnd,
-            plantCapacityKw: site.plantCapacityKw,
-            priceAmount,
-          })),
-        });
-      }
-
-      return { subscription, firstBooking, futureVisitCount: futureVisits.length };
+    const result = await createSubscriptionWithSchedule({
+      userId: req.user.id,
+      siteId: data.siteId,
+      amcPlanId: data.amcPlanId,
+      firstVisitDate: data.firstVisitDate,
+      slotStart: data.slotStart,
+      slotEnd: data.slotEnd,
     });
 
     res.status(201).json(result);
   } catch (err) {
     if (err instanceof z.ZodError) return next(badRequest("Invalid subscription payload", err.issues));
     if (err instanceof Error && err.message.includes("blocked")) return next(badRequest(err.message));
+    if (err instanceof Error && err.message === "AMC plan not found") return next(notFound("AMC plan not found"));
     next(err);
   }
 }
