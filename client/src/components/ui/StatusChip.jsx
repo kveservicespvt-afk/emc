@@ -28,6 +28,12 @@ const STYLES = {
   // Customer-facing service report availability
   REPORT_READY: "bg-forest/10 text-forest",
   REPORT_PENDING: "bg-gray-100 text-gray-600",
+  // Field lead call status (CONVERTED/LOST reuse the Lead-status colors above)
+  NOT_CALLED: "bg-gray-100 text-gray-600",
+  CALLED_NO_ANSWER: "bg-yellow-100 text-yellow-800",
+  CALLED_INTERESTED: "bg-sky/10 text-sky-dark",
+  CALLED_NOT_INTERESTED: "bg-red-100 text-red-700",
+  FOLLOWUP_SCHEDULED: "bg-gold/20 text-maroon",
 };
 
 export function StatusChip({ status }) {

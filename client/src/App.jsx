@@ -33,6 +33,8 @@ import { AdminBookingDetail } from "./pages/admin/AdminBookingDetail.jsx";
 import { AdminSettings } from "./pages/admin/AdminSettings.jsx";
 import { AdminCustomers } from "./pages/admin/AdminCustomers.jsx";
 import { AdminCustomerDetail } from "./pages/admin/AdminCustomerDetail.jsx";
+import { AdminFieldLeads } from "./pages/admin/AdminFieldLeads.jsx";
+import { AdminFieldLeadDetail } from "./pages/admin/AdminFieldLeadDetail.jsx";
 import { AdminBlog } from "./pages/admin/AdminBlog.jsx";
 import { AdminBlogEditor } from "./pages/admin/AdminBlogEditor.jsx";
 import { AdminPageContent } from "./pages/admin/AdminPageContent.jsx";
@@ -78,6 +80,8 @@ export function App() {
         <Route path="cities" element={<AdminCities />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="customers/:id" element={<AdminCustomerDetail />} />
+        <Route path="field-leads" element={<AdminFieldLeads />} />
+        <Route path="field-leads/:id" element={<AdminFieldLeadDetail />} />
         <Route path="general-queries" element={<AdminGeneralQueries />} />
         <Route path="commercial-queries" element={<AdminCommercialQueries />} />
         <Route path="payments" element={<AdminPayments />} />
