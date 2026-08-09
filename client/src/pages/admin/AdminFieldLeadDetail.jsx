@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "../../api/adminClient.js";
 import { AsyncState } from "../../components/ui/AsyncState.jsx";
 import { StatusChip } from "../../components/ui/StatusChip.jsx";
+import { FieldLeadCallLogPanel } from "../../components/admin/FieldLeadCallLogPanel.jsx";
 
 export function AdminFieldLeadDetail() {
   const { id } = useParams();
@@ -65,6 +66,8 @@ export function AdminFieldLeadDetail() {
                   </div>
                 </dl>
               </div>
+
+              <FieldLeadCallLogPanel fieldLeadId={id} callLogs={query.data.callLogs} />
             </div>
           )}
         </AsyncState>
