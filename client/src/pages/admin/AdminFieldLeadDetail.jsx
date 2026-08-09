@@ -4,6 +4,7 @@ import { adminApi } from "../../api/adminClient.js";
 import { AsyncState } from "../../components/ui/AsyncState.jsx";
 import { StatusChip } from "../../components/ui/StatusChip.jsx";
 import { FieldLeadCallLogPanel } from "../../components/admin/FieldLeadCallLogPanel.jsx";
+import { ConvertToAmcCard } from "../../components/admin/ConvertToAmcCard.jsx";
 
 export function AdminFieldLeadDetail() {
   const { id } = useParams();
@@ -66,6 +67,8 @@ export function AdminFieldLeadDetail() {
                   </div>
                 </dl>
               </div>
+
+              <ConvertToAmcCard fieldLead={query.data} />
 
               <FieldLeadCallLogPanel fieldLeadId={id} callLogs={query.data.callLogs} />
             </div>
