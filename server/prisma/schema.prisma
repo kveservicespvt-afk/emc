@@ -123,14 +123,16 @@ model User {
   internalNotes   String?   // admin/staff-only — never exposed via customer-facing endpoints
   createdAt       DateTime  @default(now())
 
-  sites           Site[]
-  technician      Technician?
-  bookings        Booking[]
-  subscriptions   Subscription[]
-  reviews         Review[]
-  leadsAssigned   Lead[]    @relation("LeadAssignee")
-  adminNotes      AdminNote[]
-  bookingActivity BookingActivityLog[]
+  sites             Site[]
+  technician        Technician?
+  bookings          Booking[]
+  subscriptions     Subscription[]
+  reviews           Review[]
+  leadsAssigned     Lead[]    @relation("LeadAssignee")
+  adminNotes        AdminNote[]
+  bookingActivity   BookingActivityLog[]
+  fieldLeadsAssigned FieldLead[]         @relation("FieldLeadAssignee")
+  fieldLeadCallLogs  FieldLeadCallLog[]
 }
 
 model Site {
@@ -220,6 +222,7 @@ model Subscription {
   status        SubscriptionStatus  @default(ACTIVE)
 
   bookings      Booking[]
+  fieldLead     FieldLead?
 }
 
 model Booking {
@@ -404,4 +407,58 @@ model BookingActivityLog {
   actor     User     @relation(fields: [actorId], references: [id])
   message   String
   createdAt DateTime @default(now())
+}
+
+// Bulk field leads (sales team's own house lists — e.g. a door-to-door survey
+// of 100-200 houses) tracked through a call/follow-up pipeline into an AMC
+// conversion. Deliberately separate from Lead (website Contact Us/Commercial
+// Quote submissions) — different fields, different lifecycle.
+enum FieldLeadStatus {
+  NOT_CALLED
+  CALLED_NO_ANSWER
+  CALLED_INTERESTED
+  CALLED_NOT_INTERESTED
+  FOLLOWUP_SCHEDULED
+  CONVERTED
+  LOST
+}
+
+model FieldLead {
+  id                      String             @id @default(cuid())
+  houseNumber             String?
+  customerName            String
+  phone                   String             @unique
+  address                 String?
+  city                    String?
+  plantCapacityKw         Float?
+  numberOfPanels          Int?
+  source                  String             @default("field_survey")
+  callStatus              FieldLeadStatus    @default(NOT_CALLED)
+  lastCallDate            DateTime?
+  nextFollowupDate        DateTime?
+  assignedToId            String?
+  assignedTo              User?              @relation("FieldLeadAssignee", fields: [assignedToId], references: [id])
+  convertedSubscriptionId String?            @unique
+  convertedSubscription   Subscription?      @relation(fields: [convertedSubscriptionId], references: [id])
+  createdAt               DateTime           @default(now())
+  updatedAt                DateTime          @updatedAt
+
+  callLogs                FieldLeadCallLog[]
+
+  @@index([callStatus])
+}
+
+// Full call history — every call/interaction appends a row here rather than
+// overwriting a single field on FieldLead, so nothing about past contact
+// attempts is ever lost.
+model FieldLeadCallLog {
+  id          String          @id @default(cuid())
+  fieldLeadId String
+  fieldLead   FieldLead       @relation(fields: [fieldLeadId], references: [id])
+  calledById  String
+  calledBy    User            @relation(fields: [calledById], references: [id])
+  callDate    DateTime        @default(now())
+  remark      String?
+  outcome     FieldLeadStatus
+  createdAt   DateTime        @default(now())
 }
