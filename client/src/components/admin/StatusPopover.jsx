@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { clampPopoverPosition } from "../../lib/popoverPosition.js";
 import { StatusChip } from "../ui/StatusChip.jsx";
 
 // Click-to-edit wrapper around StatusChip for admin tables — avoids needing to
@@ -19,6 +20,18 @@ export function StatusPopover({ status, options, onSelect, disabled }) {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  // Re-measure once the popover has actually rendered and re-anchor it —
+  // flipping above the trigger or clamping — if the naive below-trigger
+  // placement would run off the viewport. Runs before paint so there's no
+  // visible jump. (Short option lists rarely hit this, but nothing stops a
+  // long `options` list or a low row from doing so.)
+  useLayoutEffect(() => {
+    if (!open || !popoverRef.current || !triggerRef.current) return;
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const popoverRect = popoverRef.current.getBoundingClientRect();
+    setCoords(clampPopoverPosition(triggerRect, popoverRect));
   }, [open]);
 
   function handleTriggerClick() {

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "../../api/adminClient.js";
 import { apiErrorMessage } from "../../api/client.js";
 import { AsyncState } from "../../components/ui/AsyncState.jsx";
-import { StatusChip } from "../../components/ui/StatusChip.jsx";
+import { FieldLeadStatusLogPopover } from "../../components/admin/FieldLeadStatusLogPopover.jsx";
 import { downloadBlob } from "../../lib/downloadBlob.js";
 
 const CALL_STATUSES = [
@@ -316,7 +316,7 @@ export function AdminFieldLeads() {
                     <td className="py-3 text-gray-500">{f.phone}</td>
                     <td className="py-3 text-gray-500">{f.city ?? "—"}</td>
                     <td className="py-3 text-gray-500">{f.plantCapacityKw ?? "—"}</td>
-                    <td className="py-3"><StatusChip status={f.callStatus} /></td>
+                    <td className="py-3"><FieldLeadStatusLogPopover fieldLeadId={f.id} status={f.callStatus} /></td>
                     <td className="py-3 text-gray-500">
                       {f.lastCallDate ? new Date(f.lastCallDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "—"}
                     </td>
